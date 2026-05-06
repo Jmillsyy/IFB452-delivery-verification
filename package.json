@@ -1,0 +1,16 @@
+{
+  "name": "ifb452-delivery-verification",
+  "version": "0.1.0",
+  "description": "Blockchain-based delivery verification system for a building-products supply chain (IFB452)",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  }
+}
