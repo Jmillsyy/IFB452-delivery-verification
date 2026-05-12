@@ -32,7 +32,7 @@ the load against the order and either confirms departure or flags a discrepancy.
 Both team members need:
 
 1. **Node.js LTS** — verify with `node --version` (should be >= 18).
-2. **VS Code** with the *Solidity* extension by Juan Blanco.
+2. **VS Code** with the *Solidity* extension.
 3. **MetaMask** browser extension (use a throwaway wallet for development).
 
 Then in this repo:
@@ -80,19 +80,3 @@ Open `http://localhost:3000` and connect MetaMask to the Hardhat local network
 1. **Happy path** — Sales account creates an order; Driver scans matching pallets; load confirmed.
 2. **Discrepancy path** — Sales creates an order; Driver scans a wrong pallet; contract reverts with `DiscrepancyDetected`.
 3. **Access control** — Non-Sales account tries `createOrder`, fails with `UnauthorizedRole`.
-
-## Team split
-
-| Owner    | Area                                                                       |
-| -------- | -------------------------------------------------------------------------- |
-| Person A | Smart contracts, Hardhat tests, deploy scripts, BPMN orchestration view    |
-| Person B | Next.js frontend, MetaMask integration, role-based UI, BPMN collaboration  |
-| Both     | Architecture diagram, integration testing, slides, video                   |
-
-## Key dates
-
-| Milestone                     | Date         |
-| ----------------------------- | ------------ |
-| Progress slides submission    | 15 May 2026  |
-| Final demo (lab)              | 25-29 May    |
-| 3-min demo video submission   | 29 May 2026  |
