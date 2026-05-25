@@ -37,6 +37,11 @@ describe("Delivery Verification System", function () {
     deliveryContract = await DeliveryContract.deploy(await orderContract.getAddress());
     await deliveryContract.waitForDeployment();
 
+    // Register DeliveryContract so it can call OrderContract.updateStatus
+    await orderContract
+      .connect(admin)
+      .setDeliveryContract(await deliveryContract.getAddress());
+
     // Seed roles (admin only)
     await orderContract.connect(admin).assignRole(sales.address, Role.Sales);
     await orderContract.connect(admin).assignRole(supplier.address, Role.Supplier);
@@ -156,6 +161,95 @@ describe("Delivery Verification System", function () {
       await expect(
         deliveryContract.connect(outsider).scanPallet(0, sampleItems)
       ).to.be.revertedWithCustomError(deliveryContract, "UnauthorizedRole");
+    });
+  });
+
+  describe("Order cancellation", function () {
+    beforeEach(async function () {
+      await orderContract
+        .connect(sales)
+        .createOrder(supplier.address, sampleItems, DELIVERY_DATE);
+    });
+
+    it("Buyer can cancel their own order while in Created state", async function () {
+      const tx = await orderContract.connect(sales).cancelOrder(0);
+      await expect(tx)
+        .to.emit(orderContract, "OrderStatusChanged")
+        .withArgs(0, OrderStatus.Cancelled);
+
+      const order = await orderContract.getOrder(0);
+      expect(order.status).to.equal(OrderStatus.Cancelled);
+    });
+
+    it("Non-buyer cannot cancel an order", async function () {
+      await expect(
+        orderContract.connect(outsider).cancelOrder(0)
+      ).to.be.revertedWithCustomError(orderContract, "NotOrderBuyer");
+    });
+
+    it("Cannot cancel after pallet has been scanned (InTransit)", async function () {
+      await deliveryContract.connect(driver).scanPallet(0, sampleItems);
+      await expect(
+        orderContract.connect(sales).cancelOrder(0)
+      ).to.be.revertedWithCustomError(orderContract, "CannotCancel");
+    });
+  });
+
+  describe("Role governance — revokeRole", function () {
+    it("Admin can revoke a role and emit RoleRevoked with the previous role + reason", async function () {
+      const tx = await orderContract
+        .connect(admin)
+        .revokeRole(driver.address, "repeated discrepancies");
+
+      await expect(tx)
+        .to.emit(orderContract, "RoleRevoked")
+        .withArgs(driver.address, Role.Driver, "repeated discrepancies");
+
+      expect(await orderContract.getRole(driver.address)).to.equal(Role.None);
+    });
+
+    it("Revoked driver can no longer scan pallets", async function () {
+      await orderContract
+        .connect(sales)
+        .createOrder(supplier.address, sampleItems, DELIVERY_DATE);
+
+      await orderContract.connect(admin).revokeRole(driver.address, "off-boarded");
+
+      await expect(
+        deliveryContract.connect(driver).scanPallet(0, sampleItems)
+      ).to.be.revertedWithCustomError(deliveryContract, "UnauthorizedRole");
+    });
+
+    it("Non-admin cannot revoke roles", async function () {
+      await expect(
+        orderContract.connect(sales).revokeRole(driver.address, "malicious attempt")
+      ).to.be.revertedWithCustomError(orderContract, "OnlyAdmin");
+    });
+  });
+
+  describe("Access control on OrderContract.updateStatus", function () {
+    beforeEach(async function () {
+      await orderContract
+        .connect(sales)
+        .createOrder(supplier.address, sampleItems, DELIVERY_DATE);
+    });
+
+    it("Outsider cannot call updateStatus directly", async function () {
+      await expect(
+        orderContract.connect(outsider).updateStatus(0, OrderStatus.InTransit)
+      ).to.be.revertedWithCustomError(orderContract, "OnlyDelivery");
+    });
+
+    it("Even the Sales account cannot call updateStatus directly", async function () {
+      await expect(
+        orderContract.connect(sales).updateStatus(0, OrderStatus.Delivered)
+      ).to.be.revertedWithCustomError(orderContract, "OnlyDelivery");
+    });
+
+    it("Only admin can register the DeliveryContract", async function () {
+      await expect(
+        orderContract.connect(outsider).setDeliveryContract(outsider.address)
+      ).to.be.revertedWithCustomError(orderContract, "OnlyAdmin");
     });
   });
 });
