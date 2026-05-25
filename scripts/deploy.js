@@ -33,6 +33,11 @@ async function main() {
   const deliveryAddr = await deliveryContract.getAddress();
   console.log("DeliveryContract  :", deliveryAddr);
 
+  // ---- Register DeliveryContract on OrderContract ----
+  // Required so DeliveryContract can call OrderContract.updateStatus().
+  await (await orderContract.setDeliveryContract(deliveryAddr)).wait();
+  console.log("Linked DeliveryContract -> OrderContract.updateStatus");
+
   // ---- Seed roles ----
   console.log("\nSeeding roles...");
   await (await orderContract.assignRole(sales.address,    Role.Sales)).wait();

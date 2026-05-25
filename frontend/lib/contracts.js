@@ -5,8 +5,8 @@
 // accounts in order: index 0 = admin, 1 = Sales, 2 = Supplier, 3 = Dispatch,
 // 4 = Driver, 5 = Customer.
 
-export const ORDER_CONTRACT_ADDRESS    = "0x0000000000000000000000000000000000000000"; // TODO paste from deploy
-export const DELIVERY_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO paste from deploy
+export const ORDER_CONTRACT_ADDRESS    = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const DELIVERY_CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 
 export const HARDHAT_CHAIN_ID = 31337;
 export const HARDHAT_RPC      = "http://127.0.0.1:8545";
@@ -15,9 +15,24 @@ export const HARDHAT_RPC      = "http://127.0.0.1:8545";
 // Person B: import the full JSON from artifacts when wiring up real calls.
 export const ORDER_ABI = [
   "function createOrder(address supplier, tuple(string sku, uint256 quantity)[] items, uint256 deliveryDate) returns (uint256)",
+  "function cancelOrder(uint256 orderId)",
   "function getOrder(uint256 orderId) view returns (tuple(uint256 id, address buyer, address supplier, tuple(string sku, uint256 quantity)[] items, uint8 status, uint256 deliveryDate, uint256 createdAt))",
+  "function nextOrderId() view returns (uint256)",
   "function getRole(address account) view returns (uint8)",
+  "function updateStatus(uint256 orderId, uint8 newStatus)",
+  "function assignRole(address account, uint8 role)",
+  "function revokeRole(address account, string reason)",
   "event OrderCreated(uint256 indexed orderId, address indexed buyer, address indexed supplier)",
+  "event OrderStatusChanged(uint256 indexed orderId, uint8 newStatus)",
+  "event RoleAssigned(address indexed account, uint8 role)",
+  "event RoleRevoked(address indexed account, uint8 previousRole, string reason)",
+  // Custom errors — these let ethers decode reverts into readable names.
+  "error UnauthorizedRole(address caller, uint8 required)",
+  "error OnlyAdmin(address caller)",
+  "error OnlyDelivery(address caller)",
+  "error OrderNotFound(uint256 orderId)",
+  "error NotOrderBuyer(address caller, address buyer)",
+  "error CannotCancel(uint256 orderId, uint8 currentStatus)",
 ];
 
 export const DELIVERY_ABI = [
@@ -27,6 +42,10 @@ export const DELIVERY_ABI = [
   "event PalletScanned(uint256 indexed orderId, address indexed driver, bool matched)",
   "event DiscrepancyDetected(uint256 indexed orderId, address indexed driver, string reason)",
   "event DeliveryConfirmed(uint256 indexed orderId, address indexed driver)",
+  // Custom errors for readable reverts
+  "error UnauthorizedRole(address caller, uint8 required)",
+  "error AlreadyVerified(uint256 orderId)",
+  "error NotVerified(uint256 orderId)",
 ];
 
 export const ROLE_NAMES = ["None", "Sales", "Supplier", "Dispatch", "Driver", "Customer"];
